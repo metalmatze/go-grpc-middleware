@@ -31,6 +31,7 @@ func (r *reporter) PostCall(err error, duration time.Duration) {
 	switch r.kind {
 	case KindServer:
 		r.serverMetrics.serverHandledCounter.WithLabelValues(string(r.typ), r.service, r.method, code.String()).Inc()
+		//r.serverMetrics.
 		if r.serverMetrics.serverHandledHistogram != nil {
 			r.serverMetrics.serverHandledHistogram.WithLabelValues(string(r.typ), r.service, r.method).Observe(time.Since(r.startTime).Seconds())
 		}

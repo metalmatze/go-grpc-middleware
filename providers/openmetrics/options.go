@@ -35,6 +35,18 @@ func WithConstLabels(labels openmetrics.Labels) CounterOption {
 	}
 }
 
+// A SummaryOption lets you add options to Summary metrics using With* funcs.
+type SummaryOption func(opts *openmetrics.SummaryOpts)
+
+type summaryOptions []SummaryOption
+
+func (co summaryOptions) apply(o openmetrics.SummaryOpts) openmetrics.SummaryOpts {
+	for _, f := range co {
+		f(&o)
+	}
+	return o
+}
+
 // A HistogramOption lets you add options to Histogram metrics using With*
 // funcs.
 type HistogramOption func(*openmetrics.HistogramOpts)

@@ -77,6 +77,7 @@ func (s *ServerInterceptorTestSuite) TestRegisterPresetsStuff() {
 		{"grpc_server_handled_total", []string{testpb.TestServiceFullName, "PingList", "server_stream", "Aborted"}},
 		{"grpc_server_handled_total", []string{testpb.TestServiceFullName, "PingEmpty", "unary", "FailedPrecondition"}},
 		{"grpc_server_handled_total", []string{testpb.TestServiceFullName, "PingEmpty", "unary", "ResourceExhausted"}},
+		{"grpc_server_msg_received_size_bytes", []string{testpb.TestServiceFullName, "PingEmpty", "unary"}},
 	} {
 		lineCount := len(fetchPrometheusLines(s.T(), registry, testCase.metricName, testCase.existingLabels...))
 		assert.NotZero(s.T(), lineCount, "metrics must exist for test case %d", testID)

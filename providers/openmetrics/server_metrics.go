@@ -15,6 +15,8 @@ import (
 type ServerMetrics struct {
 	serverStartedCounter    *openmetrics.CounterVec
 	serverHandledCounter    *openmetrics.CounterVec
+	serverMsgReceivedSize   *openmetrics.SummaryVec
+	serverMsgSentSize       *openmetrics.SummaryVec
 	serverStreamMsgReceived *openmetrics.CounterVec
 	serverStreamMsgSent     *openmetrics.CounterVec
 	// serverHandledHistogram can be nil
@@ -36,6 +38,18 @@ func NewServerMetrics(opts ...ServerMetricsOption) *ServerMetrics {
 				Name: "grpc_server_handled_total",
 				Help: "Total number of RPCs completed on the server, regardless of success or failure.",
 			}), []string{"grpc_type", "grpc_service", "grpc_method", "grpc_code"}),
+		serverMsgReceivedSize: openmetrics.NewSummaryVec(
+			config.summaryOpts.apply(openmetrics.SummaryOpts{
+				Name:       "grpc_server_msg_received_size_bytes",
+				Help:       "A summary that tracks percentiles of grpc request sizes.",
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			}), []string{"grpc_type", "grpc_service", "grpc_method"}),
+		serverMsgSentSize: openmetrics.NewSummaryVec(
+			config.summaryOpts.apply(openmetrics.SummaryOpts{
+				Name:       "grpc_server_msg_sent_size_bytes",
+				Help:       "A summary that tracks percentiles of grpc response sizes.",
+				Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			}), []string{"grpc_type", "grpc_service", "grpc_method"}),
 		serverStreamMsgReceived: openmetrics.NewCounterVec(
 			config.counterOpts.apply(openmetrics.CounterOpts{
 				Name: "grpc_server_msg_received_total",
@@ -80,6 +94,8 @@ func (m *ServerMetrics) toRegister() []openmetrics.Collector {
 	res := []openmetrics.Collector{
 		m.serverStartedCounter,
 		m.serverHandledCounter,
+		m.serverMsgReceivedSize,
+		m.serverMsgSentSize,
 		m.serverStreamMsgReceived,
 		m.serverStreamMsgSent,
 	}
@@ -95,6 +111,8 @@ func (m *ServerMetrics) toRegister() []openmetrics.Collector {
 func (m *ServerMetrics) Describe(ch chan<- *openmetrics.Desc) {
 	m.serverStartedCounter.Describe(ch)
 	m.serverHandledCounter.Describe(ch)
+	m.serverMsgReceivedSize.Describe(ch)
+	m.serverMsgSentSize.Describe(ch)
 	m.serverStreamMsgReceived.Describe(ch)
 	m.serverStreamMsgSent.Describe(ch)
 	if m.serverHandledHistogram != nil {
@@ -108,6 +126,8 @@ func (m *ServerMetrics) Describe(ch chan<- *openmetrics.Desc) {
 func (m *ServerMetrics) Collect(ch chan<- openmetrics.Metric) {
 	m.serverStartedCounter.Collect(ch)
 	m.serverHandledCounter.Collect(ch)
+	m.serverMsgReceivedSize.Collect(ch)
+	m.serverMsgSentSize.Collect(ch)
 	m.serverStreamMsgReceived.Collect(ch)
 	m.serverStreamMsgSent.Collect(ch)
 	if m.serverHandledHistogram != nil {
@@ -133,6 +153,8 @@ func (m *ServerMetrics) preRegisterMethod(serviceName string, mInfo *grpc.Method
 	methodType := string(typeFromMethodInfo(mInfo))
 	// These are just references (no increments), as just referencing will create the labels but not set values.
 	_, _ = m.serverStartedCounter.GetMetricWithLabelValues(methodType, serviceName, methodName)
+	_, _ = m.serverMsgReceivedSize.GetMetricWithLabelValues(methodType, serviceName, methodName)
+	_, _ = m.serverMsgSentSize.GetMetricWithLabelValues(methodType, serviceName, methodName)
 	_, _ = m.serverStreamMsgReceived.GetMetricWithLabelValues(methodType, serviceName, methodName)
 	_, _ = m.serverStreamMsgSent.GetMetricWithLabelValues(methodType, serviceName, methodName)
 	if m.serverHandledHistogram != nil {

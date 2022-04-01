@@ -9,6 +9,7 @@ import (
 
 type serverMetricsConfig struct {
 	counterOpts counterOptions
+	summaryOpts summaryOptions
 	// serverHandledHistogram can be nil
 	serverHandledHistogram *openmetrics.HistogramVec
 }
